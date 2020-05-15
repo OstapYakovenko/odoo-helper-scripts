@@ -143,6 +143,31 @@ function postgres_psql {
         PGPORT=$pgport PGUSER=$pguser psql "$@";
 }
 
+# Connect to database via psql
+# Automaticaly pass connection parametrs
+#
+# postgres_psql ....
+function postgres_pg_dump {
+    local pghost;
+    local pgport;
+    local pguser;
+    local pgpass;
+    local default_db;
+
+    pghost=$(odoo_get_conf_val db_host);
+    pgport=$(odoo_get_conf_val db_port);
+    pguser=$(odoo_get_conf_val db_user);
+    pgpass=$(odoo_get_conf_val db_password);
+    default_db=$(odoo_get_conf_val_default db_name postgres);
+
+    if [ -z "$pgport" ] || [ "$pgport" == 'False' ]; then
+        pgport=;
+    fi
+
+    PGPASSWORD=$pgpass PGDATABASE=$default_db PGHOST=$pghost \
+        PGPORT=$pgport PGUSER=$pguser pg_dump --no-owner --no-privileges "$@";
+}
+
 # Show active postgres transactions
 #
 function postgres_psql_stat_activity {
@@ -311,6 +336,12 @@ function postgres_command {
                 shift;
                 config_load_project;
                 postgres_psql "$@";
+                return;
+            ;;
+            pg_dump)
+                shift;
+                config_load_project;
+                postgres_pg_dump "$@";
                 return;
             ;;
             stat-activity)
